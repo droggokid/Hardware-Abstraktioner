@@ -1,16 +1,53 @@
 #include <linux/gpio.h> 
- #include <linux/fs.h>
- #include <linux/cdev.h>
- #include <linux/device.h>
- #include <linux/uaccess.h>
- #include <linux/module.h>
+#include <linux/fs.h>
+#include <linux/cdev.h>
+#include <linux/device.h>
+#include <linux/uaccess.h>
+#include <linux/module.h>
+#include <linux/platform_device.h>
+#include <linux/device.h>
 
 #define GPIO_NR 21
 const int first_minor = 0;
 const int max_devices = 255;
+const int major_from_alloc_region = 239;
 static dev_t devno;
 static struct class *LED_class;
 static struct cdev LED_cdev;
+static struct device *LED_device;
+static const u8 minor = 0;
+
+static int LED_probe(struct platform_device *pdev){
+    
+    printk(KERN_DEBUG "New Platform device: %s\n", pdev->name);
+    /* Request resources */
+    int err = gpio_request(GPIO_NR, "my_p_dev_gpio");
+    /* Dynamically add device */
+    LED_device = device_create(LED_class, NULL, MKDEV(major_from_alloc_region, first_minor), NULL, "mygpio%d", GPIO_NR);
+    return err;}
+
+static int LED_remove(struct platform_device *pdev)
+{
+    printk (KERN_ALERT "Removing device %s\n", pdev->name);
+    /* Remove device created in probe, this must be
+    * done for all devices created in probe */
+    device_destroy(LED_class,
+    MKDEV(major_from_alloc_region, first_minor));
+    gpio_free(GPIO_NR);
+    return 0;
+}
+
+static const struct of_device_id my_led_platform_device_match[] = {
+{ .compatible = "ase, plat_drv",}, {},
+};
+
+static struct platform_driver my_led_platform_driver = {
+    .probe = LED_probe,
+    .remove = LED_remove,
+    .driver = {
+        .name = "my_led_old_naming",
+        .of_match_table = my_led_platform_device_match,
+        .owner = THIS_MODULE, }, };
 
 int LED_open(struct inode* inode, struct file* filep){
     int major, minor;
@@ -54,6 +91,7 @@ ssize_t LED_write(struct file *filep, const char __user *ubuf, size_t count, lof
     return len;
 }
 
+
 struct file_operations LED_fops ={
     .owner = THIS_MODULE,
     .open = LED_open,
@@ -65,6 +103,7 @@ struct file_operations LED_fops ={
 static int __init mygpio_init(void)
 {
  // Request GPIO
+
 devno = gpio_request(GPIO_NR, "16");
 
  // Set GPIO direction (in or out)
@@ -81,6 +120,8 @@ pr_info("LED-Driver got Major %i\n", MAJOR(devno));
 LED_class = class_create(THIS_MODULE, "LED-class");
 if (IS_ERR(LED_class)) pr_err("Failed to create class");
 
+platform_driver_register(&my_led_platform_driver);
+
  // Cdev Init
  cdev_init(&LED_cdev, &LED_fops);
 
@@ -92,6 +133,7 @@ return err;
 
  static void __exit mygpio_exit(void)
  {
+platform_driver_unregister(&my_led_platform_driver);
  // Delete Cdev
 cdev_del(&LED_cdev);
  // Unregister Device

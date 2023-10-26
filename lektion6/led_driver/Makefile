@@ -2,7 +2,7 @@
 KMODULE := plat_drv
 DTB_FILE := $(KMODULE)-overlay.dtb
 DTBO_FILE := $(KMODULE).dtbo
-KERNELDIR = ~/sources/rpi-5.4.51
+KERNELDIR = ~/sources/rpi-5.4.83
 CCPREFIX = arm-poky-linux-gnueabi-
 
 # To build modules outside of the kernel tree, we run "make"
