@@ -15,7 +15,7 @@ const int max_devices = 255;
 static dev_t devnos[NUMDEVS];
 static struct class* gpio_class;
 static struct cdev gpio_cdev;
-static struct device* gpio_device;
+//static struct device* gpio_device;
 
 struct gpio_dev {
   int no;   // GPIO number
@@ -43,13 +43,13 @@ static int gpio_drv_probe(struct platform_device *pdev){
         }
 
         //create devices
-        gpio_devices[i] = device_create(gpio_class, NULL, MKDEV((unsigned int)MAJOR(devnos[i]), i), NULL, "mygpio%d", i);
-        if(gpio_device == NULL){
-            printk(KERN_ALERT "FAILED TO CREATE DEVICE\n");
-        }
-        else {
-             printk(KERN_ALERT "FAILED TO CREATE DEVICE\n");
-        }
+        gpio_devices[i] = device_create(gpio_class, NULL, MKDEV((unsigned int)MAJOR(devnos[i]), i), NULL, "mygpio1");
+        //if(gpio_device == NULL){
+        //    printk(KERN_ALERT "FAILED TO CREATE DEVICE\n");
+        //}
+        //else {
+        //     printk(KERN_ALERT "FAILED TO CREATE DEVICE\n");
+        //}
     }
 
     return 0;
