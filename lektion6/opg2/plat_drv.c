@@ -16,45 +16,68 @@
 
  #include <linux/kdev_t.h>
 
-#define NUMDEVS 2
-#define GPIO_NR 21
-const int minor = 0;
+ #include <linux/of_gpio.h>
+
+ #include <linux/err.h>
+
+const int first_minor = 0;
 const int max_devices = 255;
 static dev_t devno;
-static struct class* gpio_class;
+static struct device *gpio_device;
+static struct class *gpio_class;
 static struct cdev gpio_cdev;
 
 struct gpio_dev {
-  int no;   // GPIO number
-  int dir; // 0: in, 1: out
+  int gpio;   // GPIO number
+  int flag; // 0: in, 1: out
 
 };
 
-static struct gpio_dev gpio_devs[NUMDEVS] = {{12,0}, {21, 1}};
-static int gpios_len = NUMDEVS;
+static struct gpio_dev gpio_devs[255];
+int gpio_devs_cnt = 0;
+
 
 
 
 static int plat_drv_probe(struct platform_device *pdev){
 
-    struct device* gpio_device;
+    int err = 0;
+    struct device *dev = &pdev->dev; // Device ptr derived from current platform_device
+    struct device_node *np = dev->of_node; // Device tree node ptr
+    enum of_gpio_flags flag;
+    int gpios_in_dt = 0;
+
     printk(KERN_DEBUG"New Platform device: %s\n", pdev->name);
     printk ("Hello from probe");
 
-    for(int i = 0; i < gpios_len; i++){
+    gpios_in_dt = of_gpio_count(np);
+
+    for(int i = 0; i < gpios_in_dt; i++){
+        gpio_devs[i].gpio = of_get_gpio(np, i);
+        of_get_gpio_flags(np, i, &flag);
+        gpio_devs[i].flag = flag;
+    }
+    
+
+    for(int i = 0; i < gpios_in_dt; i++){
         //request gpionr
-        gpio_request(gpio_devs[i].no, "plat_drv");
+        err = gpio_request(gpio_devs[i].gpio, "plat_drv");
 
         //set direction for gpio
-        if(gpio_devs[i].dir == 1){
-            gpio_direction_output(gpio_devs[i].no, gpio_devs[i].dir);
+        if(gpio_devs[i].flag == 1){
+            gpio_direction_output(gpio_devs[i].gpio, gpio_devs[i].flag);
         }
         else {
-            gpio_direction_input(gpio_devs[i].no);
+            gpio_direction_input(gpio_devs[i].gpio);
         }
         //create devices
-        gpio_device = device_create(gpio_class, NULL, MKDEV(MAJOR(devno), i), NULL, "plat_drv_%d", gpio_devs[i].no);
-
+        gpio_device = device_create(gpio_class, NULL, MKDEV(MAJOR(devno), i), NULL, "plat_drv_%d", gpio_devs[i].gpio);
+        if(IS_ERR(gpio_device)) pr_err("Failed to create device");
+        else(gpio_devs_cnt++);
+        
+        printk(KERN_ALERT "Using GPIO[%i], flag:%i on major:%i, minor:%i\n",
+             gpio_devs[i].gpio, gpio_devs[i].flag,
+             MAJOR(devno), i);
     }
 
     return 0;
@@ -69,10 +92,10 @@ static int plat_drv_remove(struct platform_device *pdev)
 
     printk(KERN_ALERT "Removing device %s\n", pdev->name);
 
-    for (int i = 0; i < gpios_len; i++) {
+    for (int i = 0; i < gpio_devs_cnt; i++) {
 
             device_destroy(gpio_class, MKDEV(MAJOR(devno), i));
-            gpio_free(gpio_devs[i].no); // Free GPIOs if necessary
+            gpio_free(gpio_devs[i].gpio); // Free GPIOs if necessary
 
     }
 
@@ -142,7 +165,7 @@ ssize_t plat_drv_read(struct file* filep, char __user *buf, size_t count, loff_t
 
     minor = iminor(filep->f_inode);
 
-    value = gpio_get_value(gpio_devs[minor].no);
+    value = gpio_get_value(gpio_devs[minor].gpio);
 
     len = count < 12 ? count : 12;
 
@@ -178,7 +201,7 @@ ssize_t plat_drv_write(struct file *filep, const char __user *ubuf, size_t count
     if(err) return -EFAULT;
 
     int minor = iminor(filep->f_inode);
-    gpio_set_value(gpio_devs[minor].no, value);
+    gpio_set_value(gpio_devs[minor].gpio, value);
 
     *f_pos += len;
 
@@ -208,7 +231,7 @@ static int __init mygpio_init(void)
 
     int err=0;
 
-    err = alloc_chrdev_region(&devno, minor, max_devices, "my_plat_drv");
+    err = alloc_chrdev_region(&devno, first_minor, max_devices, "my_plat_drv");
 
     if(MAJOR(devno) < 0)
 
