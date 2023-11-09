@@ -1,1 +1,0 @@
-cmd_/home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv.ko := arm-poky-linux-gnueabi-ld -r -EL --build-id  -T ./scripts/module-common.lds -T ./arch/arm/kernel/module.lds -o /home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv.ko /home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv.o /home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv.mod.o;  true

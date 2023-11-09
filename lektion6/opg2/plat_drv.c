@@ -24,7 +24,7 @@ const int minor = 0;
 
 const int max_devices = 255;
 
-static dev_t devnos[NUMDEVS];
+static dev_t devno;
 
 static struct class* gpio_class;
 
@@ -44,9 +44,11 @@ static struct gpio_dev gpio_devs[NUMDEVS] = {{12,0}, {21, 1}};
 
 static int gpios_len = NUMDEVS;
 
-static struct device* gpio_devices[NUMDEVS];
 
-static int gpio_drv_probe(struct platform_device *pdev){
+
+static int plat_drv_probe(struct platform_device *pdev){
+
+    struct device* gpio_device;
 
     printk(KERN_DEBUG"New Platform device: %s\n", pdev->name);
 
@@ -56,7 +58,7 @@ static int gpio_drv_probe(struct platform_device *pdev){
 
         //request gpionr
 
-        devnos[i] = gpio_request(gpio_devs[i].no, "mygpio");
+        gpio_request(gpio_devs[i].no, "plat_drv");
 
         //set direction for gpio
 
@@ -74,7 +76,7 @@ static int gpio_drv_probe(struct platform_device *pdev){
 
         //create devices
 
-        gpio_devices[i] = device_create(gpio_class, NULL, MKDEV((unsigned int)MAJOR(devnos[i]), i), NULL, "mygpio1");
+        gpio_device = device_create(gpio_class, NULL, MKDEV(MAJOR(devno), i), NULL, "plat_drv_%d", gpio_devs[i].no);
 
         //if(gpio_device == NULL){
 
@@ -94,7 +96,7 @@ static int gpio_drv_probe(struct platform_device *pdev){
 
 }
 
-static int gpio_drv_remove(struct platform_device *pdev)
+static int plat_drv_remove(struct platform_device *pdev)
 
 {
 
@@ -104,15 +106,8 @@ static int gpio_drv_remove(struct platform_device *pdev)
 
     for (int i = 0; i < gpios_len; i++) {
 
-        if (gpio_devices[i] != NULL) {
-
-            device_destroy(gpio_class, MKDEV(MAJOR(devnos[i]), i));
-
-            gpio_devices[i] = NULL; // Set the pointer to NULL to avoid double freeing
-
+            device_destroy(gpio_class, MKDEV(MAJOR(devno), i));
             gpio_free(gpio_devs[i].no); // Free GPIOs if necessary
-
-        }
 
     }
 
@@ -122,31 +117,31 @@ static int gpio_drv_remove(struct platform_device *pdev)
 
 }
 
-static const struct of_device_id gpio_platform_device_match[] =
+static const struct of_device_id plat_drv_platform_device_match[] =
 
 {
 
-    { .compatible = "ase, gpio_drv",}, {},
+    { .compatible = "ase, plat_drv",}, {},
 
 };
 
-static struct platform_driver gpio_platform_driver = {
+static struct platform_driver plat_drv_platform_driver = {
 
-    .probe = gpio_drv_probe,
+    .probe = plat_drv_probe,
 
-    .remove = gpio_drv_remove,
+    .remove = plat_drv_remove,
 
     .driver = {
 
-        .name = "gpio_drv",
+        .name = "plat_drv",
 
-        .of_match_table = gpio_platform_device_match,
+        .of_match_table = plat_drv_platform_device_match,
 
         .owner = THIS_MODULE, }
 
  };
 
-int gpio_open(struct inode* inode, struct file* filep){
+int plat_drv_open(struct inode* inode, struct file* filep){
 
     int major, minor;
 
@@ -160,7 +155,7 @@ int gpio_open(struct inode* inode, struct file* filep){
 
 }
 
-int gpio_release(struct inode* inode, struct file* filep){
+int plat_drv_release(struct inode* inode, struct file* filep){
 
     int minor, major;
 
@@ -174,7 +169,7 @@ int gpio_release(struct inode* inode, struct file* filep){
 
 }
 
-ssize_t gpio_read(struct file* filep, char __user *buf, size_t count, loff_t* f_pos){
+ssize_t plat_drv_read(struct file* filep, char __user *buf, size_t count, loff_t* f_pos){
 
     char kbuf[12];
 
@@ -196,7 +191,7 @@ ssize_t gpio_read(struct file* filep, char __user *buf, size_t count, loff_t* f_
 
 }
 
-ssize_t gpio_write(struct file *filep, const char __user *ubuf, size_t count, loff_t *f_pos){
+ssize_t plat_drv_write(struct file *filep, const char __user *ubuf, size_t count, loff_t *f_pos){
 
     int len, value, err = 0;
 
@@ -226,13 +221,13 @@ struct file_operations gpio_fops ={
 
     .owner = THIS_MODULE,
 
-    .open = gpio_open,
+    .open = plat_drv_open,
 
-    .release = gpio_release,
+    .release = plat_drv_release,
 
-    .read = gpio_read,
+    .read = plat_drv_read,
 
-    .write = gpio_write
+    .write = plat_drv_write
 
 };
 
@@ -244,13 +239,13 @@ static int __init mygpio_init(void)
 
     int err=0;
 
-    err = alloc_chrdev_region(&devnos[0], minor, max_devices, "my_p_drv");
+    err = alloc_chrdev_region(&devno, minor, max_devices, "my_plat_drv");
 
-    if(MAJOR(devnos[0]) < 0)
+    if(MAJOR(devno) < 0)
 
     pr_err("Failed to register chardev\n");
 
-    pr_info("gpio-Driver got Major %i\n", MAJOR(devnos[0]));
+    pr_info("gpio-Driver got Major %i\n", MAJOR(devno));
 
     // Class Create 
 
@@ -260,15 +255,14 @@ static int __init mygpio_init(void)
 
     //register platform driver
 
-    platform_driver_register(&gpio_platform_driver);
+    platform_driver_register(&plat_drv_platform_driver);
 
     // Cdev Init
 
     cdev_init(&gpio_cdev, &gpio_fops);
 
-    // Add Cdev
 
-    err = cdev_add(&gpio_cdev, devnos[0], 255);
+    err = cdev_add(&gpio_cdev, devno, 255);
 
     if (err) pr_err("Failed to add cdev");
 
@@ -280,7 +274,7 @@ static int __init mygpio_init(void)
 
  {
 
-    platform_driver_unregister(&gpio_platform_driver);
+    platform_driver_unregister(&plat_drv_platform_driver);
 
     // Delete Cdev
 
@@ -288,7 +282,7 @@ static int __init mygpio_init(void)
 
     // Unregister Device
 
-    unregister_chrdev_region(devnos[0], max_devices);
+    unregister_chrdev_region(devno, max_devices);
 
     // Class Destroy
 

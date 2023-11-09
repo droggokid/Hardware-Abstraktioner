@@ -1,7 +1,7 @@
-# 0 "/home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv-overlay.dts"
+# 0 "/home/stud/hal/challengers/challengers/lektion6/opg2/plat_drv-overlay.dts"
 # 0 "<built-in>"
 # 0 "<command-line>"
-# 1 "/home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv-overlay.dts"
+# 1 "/home/stud/hal/challengers/challengers/lektion6/opg2/plat_drv-overlay.dts"
 
 /dts-v1/;
 /plugin/;
@@ -14,9 +14,9 @@
     target-path = "/";
     __overlay__ {
 
-      gpio_drv_overlay: gpio_drv-overlay@0 {
+      plat_drv_overlay: plat_drv-overlay@0 {
 
-        compatible = "ase, gpio_drv-overlay";
+        compatible = "ase, plat_drv";
         status = "okay";
       };
     };

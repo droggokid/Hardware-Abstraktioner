@@ -1,1 +1,1 @@
-cmd_/home/stud/Desktop/HalGit/challengers/lektion6/opg2/built-in.a := rm -f /home/stud/Desktop/HalGit/challengers/lektion6/opg2/built-in.a; arm-poky-linux-gnueabi-ar cDPrST /home/stud/Desktop/HalGit/challengers/lektion6/opg2/built-in.a 
+cmd_/home/stud/hal/challengers/challengers/lektion6/opg2/built-in.a := rm -f /home/stud/hal/challengers/challengers/lektion6/opg2/built-in.a; arm-poky-linux-gnueabi-ar cDPrST /home/stud/hal/challengers/challengers/lektion6/opg2/built-in.a 

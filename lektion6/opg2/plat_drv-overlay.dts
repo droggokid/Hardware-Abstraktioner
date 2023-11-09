@@ -1,4 +1,4 @@
-// Definitions for gpio_drv-overlay module
+// Definitions for plat_drv-overlay module
 /dts-v1/;
 /plugin/;
 
@@ -10,9 +10,9 @@
     target-path = "/";
     __overlay__ {
       /* instance:type */
-      gpio_drv_overlay: gpio_drv-overlay@0 {
+      plat_drv_overlay: plat_drv-overlay@0 {
         /* Opdater "compatible" til den ønskede værdi */
-        compatible = "ase, gpio_drv-overlay";
+        compatible = "ase, plat_drv";
         status = "okay";
       };
     };

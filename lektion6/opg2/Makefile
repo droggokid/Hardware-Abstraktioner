@@ -1,5 +1,5 @@
 # Kernel Module
-KMODULE := gpio_drv
+KMODULE := plat_drv
 DTB_FILE := $(KMODULE)-overlay.dtb
 DTBO_FILE := $(KMODULE).dtbo
 KERNELDIR = ~/sources/rpi-5.4.83
