@@ -1,13 +1,16 @@
-#include <linux/gpio.h> 
+#include <linux/gpio.h>
 #include <linux/fs.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
+#include <linux/platform_device.h>
 #include <linux/uaccess.h>
 #include <linux/module.h>
-#include <linux/platform_device.h>
-#include <linux/device.h>
+#include <linux/interrupt.h>
+#include <linux/wait.h>
+#include <linux/sched.h>
 
-#define GPIO_NR 21
+
+unsigned int GPIO_NR = 20;
 const int first_minor = 0;
 const int max_devices = 255;
 static dev_t devno;
@@ -15,40 +18,31 @@ static struct class *LED_class;
 static struct cdev LED_cdev;
 static struct device *LED_device;
 
-
 static int LED_probe(struct platform_device *pdev){
-    
+
     printk(KERN_DEBUG "New Platform device: %s\n", pdev->name);
     printk("hello from probe");
     /* Request resources */
-    devno = gpio_request(GPIO_NR, "my_p_dev_gpio");
+    gpio_request(GPIO_NR, "led");
     /* Dynamically add device */
     LED_device = device_create(LED_class, NULL, MKDEV(MAJOR(devno), first_minor), NULL, "mygpio%d", GPIO_NR);
+    
+
     return 0;}
 
 static int LED_remove(struct platform_device *pdev)
 {
     printk (KERN_ALERT "Removing device %s\n", pdev->name);
-    printk("hello from probe");
+    printk("hello from remove");
     /* Remove device created in probe, this must be
     * done for all devices created in probe */
     device_destroy(LED_class,
     MKDEV(MAJOR(devno), first_minor));
     gpio_free(GPIO_NR);
+    
     return 0;
 }
 
-static const struct of_device_id my_led_platform_device_match[] = {
-{ .compatible = "ase, plat_drv",}, {},
-};
-
-static struct platform_driver my_led_platform_driver = {
-    .probe = LED_probe,
-    .remove = LED_remove,
-    .driver = {
-        .name = "my_led_old_naming",
-        .of_match_table = my_led_platform_device_match,
-        .owner = THIS_MODULE, }, };
 
 int LED_open(struct inode* inode, struct file* filep){
     int major, minor;
@@ -92,6 +86,17 @@ ssize_t LED_write(struct file *filep, const char __user *ubuf, size_t count, lof
     return len;
 }
 
+static const struct of_device_id my_led_platform_device_match[] = {
+{ .compatible = "ase, plat_drv",}, {},
+};
+
+static struct platform_driver my_led_platform_driver = {
+    .probe = LED_probe,
+    .remove = LED_remove,
+    .driver = {
+        .name = "led",
+        .of_match_table = my_led_platform_device_match,
+        .owner = THIS_MODULE, }, };
 
 struct file_operations LED_fops ={
     .owner = THIS_MODULE,
@@ -105,7 +110,7 @@ static int __init mygpio_init(void)
 {
  // Request GPIO
 
-devno = gpio_request(GPIO_NR, "16");
+devno = gpio_request(GPIO_NR, "led");
 
  // Set GPIO direction (in or out)
 gpio_direction_output(GPIO_NR, 0); // output, default slukket

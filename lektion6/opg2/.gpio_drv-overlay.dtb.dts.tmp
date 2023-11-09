@@ -1,4 +1,8 @@
-// Definitions for gpio_drv-overlay module
+# 0 "/home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv-overlay.dts"
+# 0 "<built-in>"
+# 0 "<command-line>"
+# 1 "/home/stud/Desktop/HalGit/challengers/lektion6/opg2/gpio_drv-overlay.dts"
+
 /dts-v1/;
 /plugin/;
 
@@ -6,12 +10,12 @@
   compatible = "brcm,bcm2835", "brcm,bcm2836", "brcm,bcm2708", "brcm,bcm2709";
 
   fragment@0 {
-    /* Add device to base */
+
     target-path = "/";
     __overlay__ {
-      /* instance:type */
+
       gpio_drv_overlay: gpio_drv-overlay@0 {
-        /* Opdater "compatible" til den ønskede værdi */
+
         compatible = "ase, gpio_drv-overlay";
         status = "okay";
       };
