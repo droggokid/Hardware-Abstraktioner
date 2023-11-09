@@ -1,1 +1,0 @@
-cmd_/home/stud/hal/challengers/challengers/lektion6/opg2/plat_drv.mod := { echo  /home/stud/hal/challengers/challengers/lektion6/opg2/plat_drv.o; echo; } > /home/stud/hal/challengers/challengers/lektion6/opg2/plat_drv.mod

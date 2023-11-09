@@ -17,31 +17,20 @@
  #include <linux/kdev_t.h>
 
 #define NUMDEVS 2
-
 #define GPIO_NR 21
-
 const int minor = 0;
-
 const int max_devices = 255;
-
 static dev_t devno;
-
 static struct class* gpio_class;
-
 static struct cdev gpio_cdev;
 
-//static struct device* gpio_device;
-
 struct gpio_dev {
-
   int no;   // GPIO number
-
   int dir; // 0: in, 1: out
 
 };
 
 static struct gpio_dev gpio_devs[NUMDEVS] = {{12,0}, {21, 1}};
-
 static int gpios_len = NUMDEVS;
 
 
@@ -49,46 +38,22 @@ static int gpios_len = NUMDEVS;
 static int plat_drv_probe(struct platform_device *pdev){
 
     struct device* gpio_device;
-
     printk(KERN_DEBUG"New Platform device: %s\n", pdev->name);
-
     printk ("Hello from probe");
 
     for(int i = 0; i < gpios_len; i++){
-
         //request gpionr
-
         gpio_request(gpio_devs[i].no, "plat_drv");
 
         //set direction for gpio
-
         if(gpio_devs[i].dir == 1){
-
-            gpio_direction_output(gpio_devs[i].no, 0);
-
+            gpio_direction_output(gpio_devs[i].no, gpio_devs[i].dir);
         }
-
         else {
-
             gpio_direction_input(gpio_devs[i].no);
-
         }
-
         //create devices
-
         gpio_device = device_create(gpio_class, NULL, MKDEV(MAJOR(devno), i), NULL, "plat_drv_%d", gpio_devs[i].no);
-
-        //if(gpio_device == NULL){
-
-        //    printk(KERN_ALERT "FAILED TO CREATE DEVICE\n");
-
-        //}
-
-        //else {
-
-        //     printk(KERN_ALERT "FAILED TO CREATE DEVICE\n");
-
-        //}
 
     }
 
@@ -173,9 +138,11 @@ ssize_t plat_drv_read(struct file* filep, char __user *buf, size_t count, loff_t
 
     char kbuf[12];
 
-    int len, value;
+    int len, value, minor;
 
-    value = gpio_get_value(GPIO_NR);
+    minor = iminor(filep->f_inode);
+
+    value = gpio_get_value(gpio_devs[minor].no);
 
     len = count < 12 ? count : 12;
 
@@ -194,6 +161,7 @@ ssize_t plat_drv_read(struct file* filep, char __user *buf, size_t count, loff_t
 ssize_t plat_drv_write(struct file *filep, const char __user *ubuf, size_t count, loff_t *f_pos){
 
     int len, value, err = 0;
+    
 
     char kbuf[12];
 
@@ -209,7 +177,8 @@ ssize_t plat_drv_write(struct file *filep, const char __user *ubuf, size_t count
 
     if(err) return -EFAULT;
 
-    gpio_set_value(gpio_devs[0].no, value);
+    int minor = iminor(filep->f_inode);
+    gpio_set_value(gpio_devs[minor].no, value);
 
     *f_pos += len;
 
