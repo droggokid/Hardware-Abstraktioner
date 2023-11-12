@@ -1,1 +1,0 @@
-cmd_/home/stud/Desktop/HalGit/challengers/lektion6/opg2/plat_drv.mod := { echo  /home/stud/Desktop/HalGit/challengers/lektion6/opg2/plat_drv.o; echo; } > /home/stud/Desktop/HalGit/challengers/lektion6/opg2/plat_drv.mod
